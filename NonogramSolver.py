@@ -11,60 +11,59 @@ class Nonogram:
         n.solve()
         n.print(fields=False, print_board=True)
     """
-    size = 0
-    # TODO Allow non square boards
+    no_rows = None
+    no_cols = None
     board = None
     col_hints = None
     row_hints = None
     possible_rows = None
     flipped = False
 
-    def initialize(self, size):
+    def initialize(self, row_count, col_count):
         """
         Initialize a Nonogram. Only square nonograms are supported.
-        :param size: Number of columns and rows in the nonogram
+        :param row_count: Number of  rows in the nonogram
+        :param col_count: Number of columns in the nonogram
         :return:
         """
-        self.size = size
+        self.no_cols = col_count
+        self.no_rows = row_count
         self.col_hints = None
         self.row_hints = None
         self.possible_rows = None
         self.flipped = False
         self.board = []
-        for rowid in range(0, size):
-            self.board.append([0] * size)
+        for rowid in range(0, self.no_rows):
+            self.board.append([0] * self.no_cols)
 
     def initialize_from_file(self, filename, verbose=False):
         """
         Initialize a nonogram from a file.
         File format:
-            - first row is the size
+            - first row is the number of rows
+            - second row is the number of columns
             - then for each row the hints, seperated by space
             - then for each column the hints, seperated by spaces.
-            Total number of lines is (2*size + 1)
+            Total number of lines is (2 + no_rows + no_columns)
         Prints the initialised nonogram.
         :param filename: Filename of file with nonogram puzzle specification
         :param verbose: If True, print the initialised class
         :return:
         """
-        self.possible_rows = None
-        self.flipped = False
         with open(filename) as f:
-            # Get size
-            self.size = int(f.readline())
-            # create board
-            self.board = []
-            for i in range(0, self.size):
-                self.board.append([0] * self.size)
+            # Get sizes
+            row_count = int(f.readline())
+            col_count = int(f.readline())
+            self.initialize(row_count, col_count)
             # Read row hints, one row per line
             self.row_hints = []
-            for i in range(0, self.size):
+            for i in range(0, self.no_rows):
                 line = f.readline()
                 numbers = [int(i) for i in line.split()]
                 self.row_hints.append(numbers)
             # Read column hints, one column per line
             self.col_hints = []
-            for i in range(0, self.size):
+            for i in range(0, self.no_cols):
                 line = f.readline()
                 numbers = [int(i) for i in line.split()]
                 self.col_hints.append(numbers)
@@ -79,7 +78,7 @@ class Nonogram:
         :return:
         """
         if fields:
-            print('Size          : ' + str(self.size))
+            print('Size          : ' + str(self.no_rows) + ' X ' + str(self.no_cols))
             print('Column hints  : ' + str(self.col_hints))
             print('Row hints     : ' + str(self.row_hints))
         if fields and print_board:
@@ -116,7 +115,7 @@ class Nonogram:
         The size equals the number of rows and the number of columns
         :return: The size of the board as integer
         """
-        return self.size
+        return self.no_rows, self.no_cols
 
     def set_col_hints(self, hints):
         """
@@ -155,7 +154,7 @@ class Nonogram:
         If a '0' is found, the current serie is added to the descrptor
         If at the end of the row a serie is in progress, it is added to the list
         '''
-        for colid in range(0, self.size):
+        for colid in range(0, self.no_cols):
             if self.board[rowid][colid] == 1:
                 if previous_field < 1:
                     count = 1
@@ -183,7 +182,7 @@ class Nonogram:
         previous_field = 0
         count = 0
         if not no_rows:
-            no_rows = self.size
+            no_rows = self.no_rows
         '''
         We iterate over the column. 
         If a '1' is found
@@ -218,7 +217,7 @@ class Nonogram:
         :return: List of lists of numbers, list of row descriptors
         """
         res = []
-        for rowid in range(0, self.size):
+        for rowid in range(0, self.no_rows):
             res.append(self.get_row_descriptor(rowid))
         return res
 
@@ -233,7 +232,7 @@ class Nonogram:
         :return: List of lists of numbers, list of column descriptors
         """
         res = []
-        for colid in range(0, self.size):
+        for colid in range(0, self.no_cols):
             res.append(self.get_col_descriptor(colid))
         return res
 
@@ -257,10 +256,10 @@ class Nonogram:
                 sub_res = self.__gen_row_next_part(next_row, hints_index + 1, hints, spaces, xtra_spaces_limit)
                 for r in sub_res:
                     result.append(r)
-        elif len(row) <= self.size:
+        elif len(row) <= self.no_cols:
             # All hints already added, time to return result
             # Return possible solution, after filling it with 0's to match size
-            return [(row + [0] * (self.size - len(row)))]
+            return [(row + [0] * (self.no_cols - len(row)))]
         return result
 
     def get_row_possibilities(self, rowid):
@@ -276,7 +275,7 @@ class Nonogram:
         spaces = [1] * len(hints)
         spaces[0] = 0
         # Calculate the number of possible empty fields to add.
-        xtra_spaces = self.size - sum(hints) - len(hints) + 1
+        xtra_spaces = self.no_cols - sum(hints) - len(hints) + 1
         possibilities = self.__gen_row_next_part([], 0, hints, spaces, xtra_spaces)
         return possibilities
 
@@ -288,7 +287,7 @@ class Nonogram:
         :return: The list of possible rows per row
         """
         self.possible_rows = []
-        for rowid in range(0, self.size):
+        for rowid in range(0, self.no_rows):
             self.possible_rows.append(self.get_row_possibilities(rowid))
         return self.possible_rows
 
@@ -311,7 +310,7 @@ class Nonogram:
         :param rowid: Row number of the current row
         :return: True, if a solution is found
         """
-        if rowid < self.size:
+        if rowid < self.no_rows:
             for i in range(0, len(self.possible_rows[rowid])):
                 self.board[rowid] = self.possible_rows[rowid][i]
                 if self.match_cols_sofar(rowid + 1):
@@ -382,7 +381,7 @@ class Nonogram:
         :return: True, if the board so far fulfills the hints
         """
         res = []
-        for colid in range(0, self.size):
+        for colid in range(0, self.no_cols):
             res.append(self.get_col_descriptor(colid, no_rows))
         for colid in range(len(res)):
             if not self.partial_match(self.col_hints[colid], res[colid]):
@@ -426,5 +425,10 @@ if __name__ == '__main__':
 
     n = Nonogram()
     n.initialize_from_file('tree.txt', verbose=True)
+    n.timed_solve()
+    n.print(fields=False, print_board=True)
+
+    n = Nonogram()
+    n.initialize_from_file('10X6.txt', verbose=True)
     n.timed_solve()
     n.print(fields=False, print_board=True)
