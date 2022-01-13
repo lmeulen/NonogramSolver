@@ -87,7 +87,6 @@ class Nonogram:
             chars = ['.', 'X']
             for r in self.board:
                 for c in r:
-                    # ch = '.' if c == -1 else str(c)
                     print(chars[c], end=' ')
                 print()
 
@@ -329,7 +328,7 @@ class Nonogram:
         Returns a copy of the resulting board.
         The result is also stored in the internal board.
         If multiple solutions are found, only the last found solution is stored.
-        :return:
+        :return: The solved board
         """
         self.generate_possible_rows()
         # Check to see if it faster the flip the board so we can find the solution faster
@@ -344,6 +343,13 @@ class Nonogram:
         return self.board.copy()
 
     def timed_solve(self):
+        """
+        Solve the given Nonogram and show how long it took to solve.
+        Returns a copy of the resulting board and the time taken
+        The result is also stored in the internal board.
+        If multiple solutions are found, only the last found solution is stored.
+        :return: The solved board, time taken (ms)
+        """
         start_time = time.time()
         result = self.solve()
         time_taken = time.time() - start_time
@@ -430,5 +436,10 @@ if __name__ == '__main__':
 
     n = Nonogram()
     n.initialize_from_file('10X6.txt', verbose=True)
+    n.timed_solve()
+    n.print(fields=False, print_board=True)
+
+    n = Nonogram()
+    n.initialize_from_file('15x15.txt', verbose=True)
     n.timed_solve()
     n.print(fields=False, print_board=True)
